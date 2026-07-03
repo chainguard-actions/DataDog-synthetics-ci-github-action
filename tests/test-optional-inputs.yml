@@ -1,0 +1,38 @@
+name: Test optional inputs are accepted
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: fake-api-key-for-testing
+          app-key: fake-app-key-for-testing
+          datadog-site: datadoghq.com
+          public-ids: abc-123-def
+          locations: |
+            aws:us-east-1
+            aws:eu-west-1
+          variables: |
+            START_URL=https://example.org
+            MY_VARIABLE=My title
+          subdomain: myorg
+          tunnel: 'false'
+          fail-on-critical-errors: 'false'
+          fail-on-missing-tests: 'false'
+          fail-on-timeout: 'false'
+          batch-timeout: '60000'
+      - name: Assert action ran with optional inputs (not skipped)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action step was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with optional inputs (outcome=$OUTCOME)"

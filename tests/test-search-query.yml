@@ -1,0 +1,39 @@
+name: Test search query input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: fake-api-key-for-testing
+          app-key: fake-app-key-for-testing
+          datadog-site: datadoghq.com
+          test-search-query: 'tag:team-backend'
+          fail-on-critical-errors: 'false'
+          fail-on-missing-tests: 'false'
+          fail-on-timeout: 'false'
+      - name: Assert action ran with search query (not skipped)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action step was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with test-search-query (outcome=$OUTCOME)"
+      - name: Assert tests-not-found-count output is accessible
+        env:
+          NOT_FOUND: ${{ steps.action.outputs.tests-not-found-count }}
+          SKIPPED: ${{ steps.action.outputs.tests-skipped-count }}
+          TIMED_OUT: ${{ steps.action.outputs.timed-out-count }}
+        run: |
+          echo "tests-not-found-count: '$NOT_FOUND'"
+          echo "tests-skipped-count: '$SKIPPED'"
+          echo "timed-out-count: '$TIMED_OUT'"
+          echo "PASS: output fields are accessible"

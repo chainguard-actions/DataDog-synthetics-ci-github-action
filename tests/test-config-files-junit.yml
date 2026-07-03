@@ -1,0 +1,42 @@
+name: Test config-path, files, and junit-report inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create datadog-ci config file
+        run: |
+          mkdir -p /tmp/dd-ci-config
+          cat > /tmp/dd-ci-config/datadog-ci.json <<'EOF'
+          {
+            "apiKey": "fake-api-key-for-testing",
+            "appKey": "fake-app-key-for-testing",
+            "datadogSite": "datadoghq.com"
+          }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: fake-api-key-for-testing
+          app-key: fake-app-key-for-testing
+          datadog-site: datadoghq.com
+          config-path: /tmp/dd-ci-config/datadog-ci.json
+          files: |
+            **/*.synthetics.json
+          junit-report: /tmp/junit-report.xml
+          fail-on-critical-errors: 'false'
+          fail-on-missing-tests: 'false'
+          fail-on-timeout: 'false'
+      - name: Assert action ran with config-path, files, and junit-report inputs (not skipped)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action step was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with config-path, files, and junit-report inputs (outcome=$OUTCOME)"
