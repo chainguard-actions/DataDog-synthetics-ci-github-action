@@ -1,0 +1,1 @@
+# DataDog-synthetics-ci-github-action
