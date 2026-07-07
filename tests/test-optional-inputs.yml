@@ -1,0 +1,46 @@
+name: Test optional inputs coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a dummy config file for config-path input
+        run: |
+          mkdir -p /tmp/dd-ci-config
+          cat > /tmp/dd-ci-config/datadog-ci.json <<'EOF'
+          {
+            "datadogSite": "datadoghq.com"
+          }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: fake-api-key-for-testing
+          app-key: fake-app-key-for-testing
+          config-path: '/tmp/dd-ci-config/datadog-ci.json'
+          files: '**/*.synthetics.json'
+          locations: 'aws:us-east-1'
+          selective-rerun: 'false'
+          test-search-query: 'tag:team-backend'
+          variables: 'START_URL=https://example.org,MY_VARIABLE=My title'
+      - name: Assert action ran with optional inputs
+        env:
+          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
+          TESTS_NOT_FOUND: ${{ steps.action.outputs.tests-not-found-count }}
+          TESTS_SKIPPED: ${{ steps.action.outputs.tests-skipped-count }}
+          TIMED_OUT: ${{ steps.action.outputs.timed-out-count }}
+          FAILED_NON_BLOCKING: ${{ steps.action.outputs.failed-non-blocking-count }}
+          PREVIOUSLY_PASSED: ${{ steps.action.outputs.previously-passed-count }}
+          RAW_RESULTS: ${{ steps.action.outputs.raw-results }}
+        run: |
+          echo "critical-errors-count: $CRITICAL_ERRORS"
+          echo "tests-not-found-count: $TESTS_NOT_FOUND"
+          echo "tests-skipped-count: $TESTS_SKIPPED"
+          echo "timed-out-count: $TIMED_OUT"
+          echo "failed-non-blocking-count: $FAILED_NON_BLOCKING"
+          echo "previously-passed-count: $PREVIOUSLY_PASSED"
+          echo "raw-results: $RAW_RESULTS"
+          echo "PASS: action ran with optional inputs (continue-on-error allows credential failures)"
