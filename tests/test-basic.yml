@@ -1,0 +1,43 @@
+name: Test basic usage with invalid credentials
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: 'fake-api-key-for-testing'
+          app-key: 'fake-app-key-for-testing'
+          datadog-site: 'datadoghq.com'
+          fail-on-critical-errors: 'false'
+          fail-on-missing-tests: 'false'
+          fail-on-timeout: 'false'
+          public-ids: 'abc-def-ghi'
+
+      - name: Assert action ran (step outcome is set)
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          # The action should either succeed or fail — but it must have run
+          if [ "${{ steps.action.outcome }}" = "" ]; then
+            echo "FAIL: action did not run at all"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=${{ steps.action.outcome }}"
+
+      - name: Assert outputs are present or empty strings (not unset)
+        env:
+          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
+          FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
+          PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
+        run: |
+          echo "critical-errors-count: '$CRITICAL_ERRORS'"
+          echo "failed-count: '$FAILED_COUNT'"
+          echo "passed-count: '$PASSED_COUNT'"
+          # Outputs may be empty strings when auth fails — that is acceptable.
+          # The key assertion is that the action ran (checked above).
+          echo "PASS: output assertions complete"

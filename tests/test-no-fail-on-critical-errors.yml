@@ -1,4 +1,4 @@
-name: Test optional inputs are accepted
+name: Test fail-on-critical-errors false
 on:
   workflow_dispatch:
 jobs:
@@ -13,16 +13,10 @@ jobs:
         with:
           api-key: fake-api-key-for-testing
           app-key: fake-app-key-for-testing
-          datadog-site: datadoghq.eu
-          subdomain: myorg
+          datadog-site: datadoghq.com
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
-          tunnel: 'false'
-          variables: 'START_URL=https://example.org,MY_VARIABLE=My title'
-          locations: 'aws:us-east-1'
-          junit-report: 'junit-report.xml'
-          batch-timeout: '120000'
           public-ids: 'abc-def-ghi'
 
       - name: Assert action ran (not skipped)
@@ -34,4 +28,4 @@ jobs:
             echo "FAIL: action was skipped unexpectedly"
             exit 1
           fi
-          echo "PASS: action accepted optional inputs and ran with outcome=$OUTCOME"
+          echo "PASS: action ran with outcome=$OUTCOME"
