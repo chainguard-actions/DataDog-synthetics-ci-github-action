@@ -1,4 +1,4 @@
-name: Test optional inputs are accepted
+name: Test files glob pattern input
 on:
   workflow_dispatch:
 jobs:
@@ -7,25 +7,32 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      # Create a synthetic test config file for the glob to discover
+      - name: Create synthetic test config file
+        run: |
+          mkdir -p /tmp/synthetics-tests
+          cat > /tmp/synthetics-tests/my-test.synthetics.json << 'EOF'
+          {
+            "tests": [
+              {
+                "id": "abc-def-123",
+                "config": {}
+              }
+            ]
+          }
+          EOF
+
       - id: action
         uses: .
         continue-on-error: true
         with:
           api-key: fake-api-key-for-testing
           app-key: fake-app-key-for-testing
-          datadog-site: datadoghq.com
-          batch-timeout: '300000'
+          files: |
+            /tmp/synthetics-tests/*.synthetics.json
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
-          locations: |
-            aws:us-east-1
-          variables: |
-            START_URL=https://example.org,MY_VARIABLE=My title
-          subdomain: app
-          public-ids: abc-def-123
-          selective-rerun: 'false'
-          tunnel: 'false'
 
       - name: Assert action ran (failed due to invalid credentials, as expected)
         env:

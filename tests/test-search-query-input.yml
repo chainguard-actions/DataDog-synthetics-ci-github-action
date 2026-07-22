@@ -1,4 +1,4 @@
-name: Test optional inputs are accepted
+name: Test test-search-query input
 on:
   workflow_dispatch:
 jobs:
@@ -13,19 +13,11 @@ jobs:
         with:
           api-key: fake-api-key-for-testing
           app-key: fake-app-key-for-testing
+          test-search-query: 'tag:team-backend'
           datadog-site: datadoghq.com
-          batch-timeout: '300000'
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
-          locations: |
-            aws:us-east-1
-          variables: |
-            START_URL=https://example.org,MY_VARIABLE=My title
-          subdomain: app
-          public-ids: abc-def-123
-          selective-rerun: 'false'
-          tunnel: 'false'
 
       - name: Assert action ran (failed due to invalid credentials, as expected)
         env:

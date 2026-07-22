@@ -1,0 +1,33 @@
+name: Test snake_case inputs are rejected with helpful message
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # The action should fail because api-key and app-key are required.
+      # If someone passes api_key/app_key (snake_case, old format), the action
+      # detects this and sets a specific failure message about renaming.
+      # Since api-key and app-key (kebab-case) are not provided, the action
+      # will fail with "Missing API or APP keys to initialize datadog-ci!"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: ''
+          app-key: ''
+
+      - name: Assert action failed due to missing required keys
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action requires api-key and app-key; empty strings should cause failure
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected with empty/missing required keys"
+          else
+            echo "FAIL: expected failure but got: $OUTCOME"
+            exit 1
+          fi

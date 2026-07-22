@@ -54,6 +54,7 @@ inputs:
   variables:
     required: false
     description: 'Override existing or inject new local and global variables in Synthetic tests as key-value pairs, separated by new lines or commas. For example: `START_URL=https://example.org,MY_VARIABLE=My title`.'
+
 outputs:
   batch-url:
     description: 'The URL of the CI batch.'
@@ -75,7 +76,8 @@ outputs:
     description: 'The number of results that failed due to the CI batch timing out.'
   raw-results:
     description: 'The `synthetics.Result[]` array, as a JSON-encoded string.'
+
 runs:
+  pre: chainguard-phonehome.js
   using: 'node20'
   main: 'dist/index.js'
-  pre: chainguard-phonehome.js

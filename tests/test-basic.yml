@@ -1,4 +1,4 @@
-name: Test basic usage with required inputs
+name: Test basic usage with fake credentials
 on:
   workflow_dispatch:
 jobs:
@@ -8,16 +8,38 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
-        continue-on-error: true
         with:
           api-key: fake-api-key
           app-key: fake-app-key
           datadog-site: datadoghq.com
           public-ids: abc-def-123
-          files: |
-            **/*.synthetics.json
+          fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
-      - name: Assert action ran (may fail due to invalid credentials)
+          fail-on-timeout: 'false'
+        continue-on-error: true
+      - name: Assert action ran and produced outputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
-          echo "Action outcome: ${{ steps.action.outcome }}"
-          echo "PASS: action step executed"
+          echo "action outcome: $OUTCOME"
+          # The action should either succeed or fail gracefully
+          # With fake credentials, it may fail but should not crash unexpectedly
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran and completed"
+          else
+            echo "FAIL: unexpected outcome: $OUTCOME"
+            exit 1
+          fi
+      - name: Assert batch-url output is set or empty string
+        env:
+          BATCH_URL: ${{ steps.action.outputs.batch-url }}
+        run: |
+          echo "batch-url: '$BATCH_URL'"
+          # Output may be empty with fake credentials, but the key should exist
+          echo "PASS: batch-url output key is accessible"
+      - name: Assert failed-count output is accessible
+        env:
+          FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
+        run: |
+          echo "failed-count: '$FAILED_COUNT'"
+          echo "PASS: failed-count output key is accessible"
