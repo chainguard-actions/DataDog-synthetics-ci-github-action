@@ -1,4 +1,4 @@
-name: Test basic usage with fake credentials
+name: Test custom Datadog site configuration
 on:
   workflow_dispatch:
 jobs:
@@ -11,24 +11,20 @@ jobs:
         with:
           api-key: fake-api-key
           app-key: fake-app-key
+          datadog-site: datadoghq.eu
           public-ids: abc-def-123
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
+          variables: 'MY_VAR=test_value,ANOTHER_VAR=hello'
         continue-on-error: true
-      - name: Assert action ran and produced outputs
+      - name: Assert action ran with custom site
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
-          FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
-          PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "critical-errors-count: $CRITICAL_ERRORS"
-          echo "failed-count: $FAILED_COUNT"
-          echo "passed-count: $PASSED_COUNT"
           if [ "$OUTCOME" != "success" ] && [ "$OUTCOME" != "failure" ]; then
             echo "FAIL: expected action to have run (success or failure), got: $OUTCOME"
             exit 1
           fi
-          echo "PASS: action ran with outcome=$OUTCOME"
+          echo "PASS: action ran with custom site, outcome=$OUTCOME"

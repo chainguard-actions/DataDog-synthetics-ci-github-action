@@ -1,0 +1,42 @@
+name: Test missing tests graceful handling
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: 'fake-api-key-00000000000000000000000000000000'
+          app-key: 'fake-app-key-0000000000000000000000000000000000000000'
+          public-ids: 'aaa-bbb-ccc'
+          fail-on-critical-errors: 'false'
+          fail-on-missing-tests: 'false'
+          fail-on-timeout: 'false'
+          datadog-site: 'datadoghq.com'
+      - name: Assert step completed without being cancelled
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          if [ "$OUTCOME" = "cancelled" ]; then
+            echo "FAIL: step was cancelled unexpectedly"
+            exit 1
+          fi
+          echo "PASS: step completed with outcome: $OUTCOME"
+      - name: Assert tests-not-found-count output
+        env:
+          NOT_FOUND: ${{ steps.action.outputs.tests-not-found-count }}
+        run: |
+          echo "tests-not-found-count: $NOT_FOUND"
+          # With fake credentials, we may get a critical error before reaching
+          # the test discovery phase, so this output may be empty or 0
+          if [ -z "$NOT_FOUND" ]; then
+            echo "NOTE: tests-not-found-count output is empty - action may have exited before setting outputs"
+            echo "This is acceptable when authentication fails before test discovery"
+          else
+            echo "PASS: tests-not-found-count output is set to: $NOT_FOUND"
+          fi

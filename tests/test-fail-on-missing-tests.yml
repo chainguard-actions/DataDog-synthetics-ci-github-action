@@ -1,4 +1,4 @@
-name: Test basic usage with fake credentials
+name: Test fail-on-missing-tests behavior
 on:
   workflow_dispatch:
 jobs:
@@ -6,27 +6,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: action
+      - name: Run action with fail-on-missing-tests disabled
+        id: action-no-fail
         uses: .
         with:
           api-key: fake-api-key
           app-key: fake-app-key
-          public-ids: abc-def-123
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
         continue-on-error: true
-      - name: Assert action ran and produced outputs
+      - name: Assert action ran (missing tests should not block CI)
         env:
-          OUTCOME: ${{ steps.action.outcome }}
-          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
-          FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
-          PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
+          OUTCOME: ${{ steps.action-no-fail.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "critical-errors-count: $CRITICAL_ERRORS"
-          echo "failed-count: $FAILED_COUNT"
-          echo "passed-count: $PASSED_COUNT"
           if [ "$OUTCOME" != "success" ] && [ "$OUTCOME" != "failure" ]; then
             echo "FAIL: expected action to have run (success or failure), got: $OUTCOME"
             exit 1

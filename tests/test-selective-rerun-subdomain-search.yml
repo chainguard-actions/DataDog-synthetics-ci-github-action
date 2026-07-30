@@ -1,4 +1,4 @@
-name: Test optional inputs handling
+name: Test selective-rerun, subdomain, and test-search-query inputs
 on:
   workflow_dispatch:
 jobs:
@@ -12,16 +12,14 @@ jobs:
         with:
           api-key: 'fake-api-key-00000000000000000000000000000000'
           app-key: 'fake-app-key-0000000000000000000000000000000000000000'
-          public-ids: 'abc-def-ghi'
-          datadog-site: 'datadoghq.com'
+          selective-rerun: 'false'
+          subdomain: 'app'
+          test-search-query: 'tag:team:backend'
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
-          variables: 'START_URL=https://example.org,MY_VARIABLE=My title'
-          locations: 'aws:us-east-1'
-          batch-timeout: '60000'
-          tunnel: 'false'
-      - name: Assert step completed (not cancelled)
+          datadog-site: 'datadoghq.com'
+      - name: Assert action ran (step outcome is not cancelled)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
@@ -30,16 +28,16 @@ jobs:
             echo "FAIL: step was cancelled unexpectedly"
             exit 1
           fi
-          echo "PASS: step completed with outcome: $OUTCOME"
-      - name: Assert outputs are defined or empty (not erroring on output access)
+          echo "PASS: step completed (success or failure) without being cancelled"
+      - name: Assert outputs are accessible
         env:
-          BATCH_URL: ${{ steps.action.outputs.batch-url }}
+          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
           FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
           PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
-          RAW_RESULTS: ${{ steps.action.outputs.raw-results }}
+          TESTS_NOT_FOUND: ${{ steps.action.outputs.tests-not-found-count }}
         run: |
-          echo "batch-url: $BATCH_URL"
+          echo "critical-errors-count: $CRITICAL_ERRORS"
           echo "failed-count: $FAILED_COUNT"
           echo "passed-count: $PASSED_COUNT"
-          echo "raw-results: $RAW_RESULTS"
-          echo "PASS: output variables are accessible (may be empty due to auth failure)"
+          echo "tests-not-found-count: $TESTS_NOT_FOUND"
+          echo "PASS: outputs are accessible (values may be empty with fake credentials)"
