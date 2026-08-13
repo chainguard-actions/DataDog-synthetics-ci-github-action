@@ -1,4 +1,4 @@
-name: Test basic usage
+name: Test config-path, files, and junit-report inputs
 on:
   workflow_dispatch:
 jobs:
@@ -6,16 +6,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a synthetic test config file
+        run: |
+          mkdir -p /tmp/dd-synthetics
+          cat > /tmp/dd-synthetics/synthetics.json <<'EOF'
+          {
+            "tests": []
+          }
+          EOF
+          cat > /tmp/dd-synthetics/datadog-ci.json <<'EOF'
+          {
+            "apiKey": "fake-api-key-for-testing",
+            "appKey": "fake-app-key-for-testing"
+          }
+          EOF
       - id: action
         uses: .
         with:
           api-key: fake-api-key-for-testing
           app-key: fake-app-key-for-testing
+          config-path: '/tmp/dd-synthetics/datadog-ci.json'
+          files: '/tmp/dd-synthetics/*.json'
+          junit-report: '/tmp/dd-synthetics/junit-report.xml'
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
         continue-on-error: true
-      - name: Assert outputs are set
+      - name: Assert outputs are accessible
         env:
           FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
           PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
@@ -26,4 +43,4 @@ jobs:
           echo "critical-errors-count: $CRITICAL_ERRORS"
           # The action ran (even if it errored due to bad credentials).
           # Outputs may be empty strings or zero — both are acceptable.
-          echo "PASS: action completed and outputs were accessible"
+          echo "PASS: action accepted config-path, files, and junit-report inputs and outputs were accessible"

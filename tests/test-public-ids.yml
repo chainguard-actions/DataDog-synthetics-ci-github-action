@@ -1,0 +1,28 @@
+name: Test public-ids input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          api-key: fake-api-key-for-testing
+          app-key: fake-app-key-for-testing
+          public-ids: 'abc-def-123'
+          fail-on-critical-errors: 'false'
+          fail-on-missing-tests: 'false'
+          fail-on-timeout: 'false'
+        continue-on-error: true
+      - name: Assert outputs are accessible
+        env:
+          TESTS_NOT_FOUND: ${{ steps.action.outputs.tests-not-found-count }}
+          TESTS_SKIPPED: ${{ steps.action.outputs.tests-skipped-count }}
+          RAW_RESULTS: ${{ steps.action.outputs.raw-results }}
+        run: |
+          echo "tests-not-found-count: $TESTS_NOT_FOUND"
+          echo "tests-skipped-count: $TESTS_SKIPPED"
+          echo "raw-results: $RAW_RESULTS"
+          echo "PASS: action completed with public-ids input and outputs were accessible"

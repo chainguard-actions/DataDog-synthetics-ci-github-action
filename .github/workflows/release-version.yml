@@ -1,0 +1,145 @@
+# This workflow automatically creates a release PR for the CI integration.
+
+name: Create Release PR
+
+env:
+  GIT_AUTHOR_EMAIL: 'packages@datadoghq.com'
+  GIT_AUTHOR_NAME: 'ci.datadog-ci'
+
+on:
+  workflow_dispatch:
+    inputs:
+      semver:
+        description: 'Semver argument for the version bump to do on the CI integration'
+        default: 'minor'
+        type: choice
+        options:
+          - 'patch'
+          - 'minor'
+          - 'major'
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Needed to federate tokens.
+    steps:
+      # Do the changes
+      - name: Get GitHub token via dd-octo-sts
+        id: octo-sts
+        uses: DataDog/dd-octo-sts-action@acaa02eee7e3bb0839e4272dacb37b8f3b58ba80 # v1.0.3
+        with:
+          scope: DataDog/synthetics-ci-github-action
+          policy: self.release-version.create-pr
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.octo-sts.outputs.token }}
+      - name: Install node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      - name: Create release branch
+        run: git checkout -b local-branch
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+      - name: Set git user
+        run: |
+          git config user.name "${GIT_AUTHOR_NAME}"
+          git config user.email "${GIT_AUTHOR_EMAIL}"
+      - name: Install dependencies
+        run: yarn install
+      - name: Bump CI integration version
+        id: bump-version
+        env:
+          SEMVER_INPUT: ${{ github.event.inputs.semver }}
+        run: |
+          OLD_VERSION_TAG="v$(jq -r '.version' package.json)" # e.g. v1.0.0
+
+          # The `version` command only bumps the version in package.json. It doesn't commit nor tag.
+          yarn version "$SEMVER_INPUT"
+
+          NEW_VERSION_TAG="v$(jq -r '.version' package.json)" # e.g. v1.1.0
+
+          # Update README with new version
+          sed -i "s/$OLD_VERSION_TAG/$NEW_VERSION_TAG/" README.md
+
+          safe_tag=$(printf '%s' "$NEW_VERSION_TAG" | tr -d '\n\r')
+          echo "NEW_VERSION_TAG=$safe_tag" >> $GITHUB_OUTPUT
+      - name: Update build files
+        run: |
+          yarn build
+          yarn package
+      - name: Commit new version
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+          NEW_VERSION_TAG: ${{ steps.bump-version.outputs.NEW_VERSION_TAG }}
+        run: |
+          git add --all
+          git commit -m "${NEW_VERSION_TAG}"
+      - name: Push the branch
+        env:
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+          NEW_VERSION_TAG: ${{ steps.bump-version.outputs.NEW_VERSION_TAG }}
+        run: git push -u origin "local-branch:release/${NEW_VERSION_TAG}"
+
+      # Create the pull request
+      - name: Generate release notes
+        id: generate-release-notes
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          NEW_VERSION_TAG: ${{ steps.bump-version.outputs.NEW_VERSION_TAG }}
+        with:
+          github-token: ${{ steps.octo-sts.outputs.token }}
+          script: |
+            const { data: releaseNotes } = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.NEW_VERSION_TAG,
+            })
+
+            core.setOutput('RELEASE_NOTES', releaseNotes.body)
+      - name: Create pull request
+        id: create-pull-request
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          NEW_VERSION_TAG: ${{ steps.bump-version.outputs.NEW_VERSION_TAG }}
+          SEMVER_INPUT: ${{ github.event.inputs.semver }}
+          RELEASE_NOTES: ${{ steps.generate-release-notes.outputs.RELEASE_NOTES }}
+        with:
+          github-token: ${{ steps.octo-sts.outputs.token }}
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main',
+              head: `release/${process.env.NEW_VERSION_TAG}`,
+              title: `[release:${process.env.SEMVER_INPUT}] \`${process.env.NEW_VERSION_TAG}\``,
+              body: process.env.RELEASE_NOTES
+            })
+
+            core.setOutput('PULL_REQUEST_NUMBER', pullRequest.number)
+      - name: Create comment
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          NEW_VERSION_TAG: ${{ steps.bump-version.outputs.NEW_VERSION_TAG }}
+          PULL_REQUEST_NUMBER: ${{ steps.create-pull-request.outputs.PULL_REQUEST_NUMBER }}
+        with:
+          github-token: ${{ steps.octo-sts.outputs.token }}
+          script: |
+            const body = `Once merged, this PR will automatically create a GitHub release for you.
+            The description of the release will exactly match this PR's description. Feel free to edit it.
+
+            > [!WARNING]
+            > The release will be created **but not published** on the GitHub Marketplace (because the API doesn't allow that).
+            >
+            > To publish it manually, please edit the release [here](https://github.com/DataDog/synthetics-ci-github-action/releases/edit/${process.env.NEW_VERSION_TAG}).
+            > Make sure the \`Publish this Action to the GitHub Marketplace\` checkbox is checked, and click \`Update release\`.`
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number(process.env.PULL_REQUEST_NUMBER),
+              body,
+            })

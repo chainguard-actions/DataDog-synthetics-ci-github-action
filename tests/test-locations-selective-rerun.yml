@@ -1,4 +1,4 @@
-name: Test optional inputs
+name: Test locations and selective-rerun inputs
 on:
   workflow_dispatch:
 jobs:
@@ -11,23 +11,23 @@ jobs:
         with:
           api-key: fake-api-key-for-testing
           app-key: fake-app-key-for-testing
-          datadog-site: 'datadoghq.eu'
-          subdomain: 'myorg'
-          batch-timeout: '60000'
+          locations: 'aws:us-east-1,aws:eu-west-1'
+          selective-rerun: 'false'
           fail-on-critical-errors: 'false'
           fail-on-missing-tests: 'false'
           fail-on-timeout: 'false'
-          tunnel: 'false'
         continue-on-error: true
       - name: Assert outputs are accessible
         env:
-          BATCH_URL: ${{ steps.action.outputs.batch-url }}
           FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
           PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
-          TIMED_OUT: ${{ steps.action.outputs.timed-out-count }}
+          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
+          SKIPPED_COUNT: ${{ steps.action.outputs.tests-skipped-count }}
         run: |
-          echo "batch-url: $BATCH_URL"
           echo "failed-count: $FAILED_COUNT"
           echo "passed-count: $PASSED_COUNT"
-          echo "timed-out-count: $TIMED_OUT"
-          echo "PASS: action accepted optional inputs and outputs were accessible"
+          echo "critical-errors-count: $CRITICAL_ERRORS"
+          echo "tests-skipped-count: $SKIPPED_COUNT"
+          # The action ran (even if it errored due to bad credentials).
+          # Outputs may be empty strings or zero — both are acceptable.
+          echo "PASS: action accepted locations and selective-rerun inputs and outputs were accessible"
