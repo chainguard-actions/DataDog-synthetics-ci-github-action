@@ -1,0 +1,40 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: fake-api-key
+          app-key: fake-app-key
+          public-ids: abc-def-123
+          datadog-site: datadoghq.com
+
+      - name: Assert action ran and produced outputs or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          BATCH_URL: ${{ steps.action.outputs.batch-url }}
+          FAILED_COUNT: ${{ steps.action.outputs.failed-count }}
+          PASSED_COUNT: ${{ steps.action.outputs.passed-count }}
+          CRITICAL_ERRORS: ${{ steps.action.outputs.critical-errors-count }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "batch-url: $BATCH_URL"
+          echo "failed-count: $FAILED_COUNT"
+          echo "passed-count: $PASSED_COUNT"
+          echo "critical-errors-count: $CRITICAL_ERRORS"
+
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected with fake credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

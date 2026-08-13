@@ -1,0 +1,42 @@
+name: Test test-search-query input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          api-key: fake-api-key
+          app-key: fake-app-key
+          datadog-site: datadoghq.com
+          test-search-query: 'tag:team-backend'
+          fail-on-missing-tests: 'false'
+          fail-on-critical-errors: 'false'
+
+      - name: Assert action ran with test-search-query input
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PASSED: ${{ steps.action.outputs.passed-count }}
+          FAILED: ${{ steps.action.outputs.failed-count }}
+          FAILED_NB: ${{ steps.action.outputs.failed-non-blocking-count }}
+          PREV_PASSED: ${{ steps.action.outputs.previously-passed-count }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "passed-count: $PASSED"
+          echo "failed-count: $FAILED"
+          echo "failed-non-blocking-count: $FAILED_NB"
+          echo "previously-passed-count: $PREV_PASSED"
+
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with search query"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected with fake credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

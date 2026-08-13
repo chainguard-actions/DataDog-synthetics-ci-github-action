@@ -1,0 +1,55 @@
+{
+  "name": "datadog-synthetics-github-action",
+  "version": "4.1.1",
+  "author": "Datadog",
+  "license": "Apache-2.0",
+  "description": "Run Datadog Synthetics CI tests as part of your Github Actions workflow",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "format": "prettier --write **/*.ts",
+    "format-check": "prettier --check **/*.ts",
+    "lint": "eslint src/**/*.ts",
+    "package": "ncc build --source-map --license licenses.txt",
+    "test": "jest",
+    "local-run-tests": "ci/local-run-tests.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DataDog/synthetics-ci-github-action"
+  },
+  "keywords": [
+    "actions",
+    "datadog",
+    "synthetics",
+    "test"
+  ],
+  "engines": {
+    "node": "24.13.0"
+  },
+  "volta": {
+    "node": "24.13.0",
+    "yarn": "3.4.1"
+  },
+  "packageManager": "yarn@3.4.1",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@datadog/datadog-ci": "^5.22.1",
+    "@datadog/datadog-ci-plugin-synthetics": "^5.22.1",
+    "deep-extend": "0.6.0"
+  },
+  "devDependencies": {
+    "@types/deep-extend": "0.6.2",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.3.0",
+    "@vercel/ncc": "^0.38.1",
+    "eslint": "^8.39.0",
+    "eslint-plugin-jest": "^25.2.2",
+    "jest": "^29.7.0",
+    "prettier": "2.4.1",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.9.2"
+  }
+}
