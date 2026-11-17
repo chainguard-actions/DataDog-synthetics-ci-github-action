@@ -4,8 +4,13 @@
   "version": "v4.1.0",
   "commit_sha": "dd6659473d72e38d91d546d4737c8d360d5c5871",
   "url": "https://github.com/DataDog/synthetics-ci-github-action",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/DataDog/synthetics-ci-github-action/v4.1.0/sha256-79dd545809d6eca4264d36e5fa480910df060a32da44de7afebb4bb6afc41142.tar.gz",
+    "sha256": "79dd545809d6eca4264d36e5fa480910df060a32da44de7afebb4bb6afc41142",
+    "size_bytes": 18910846
+  }
 }
